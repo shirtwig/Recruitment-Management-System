@@ -1,0 +1,6 @@
+body {
+  margin: 0;
+  background: var(--rf-paper);
+  color: var(--rf-ink);
+  min-height: 100vh;
+}
