@@ -4,14 +4,15 @@ import bcrypt from 'bcryptjs'; // משמש להשוואת סיסמה גולמי�
 import jwt from 'jsonwebtoken';
 import { UserModel } from '../models/user.model';
 import { AuthorizationModel } from '../models/authorization.model';
+import { asyncHandler } from '../middleware/asyncHandler';
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET as string;
 
-router.post('/login', async (req, res) => {
+router.post('/login', asyncHandler(async (req, res) => {
   const { email, password } = req.body as { email?: string; password?: string };
 
-  if (!email || !password) {
+  if (typeof email !=='string' ||typeof password!=='string') {
     return res.status(400).json({ error: 'צריך מייל וסיסמה' }); // 400 = בקשה לא תקינה (חסר מידע)
   }
 
@@ -48,6 +49,6 @@ router.post('/login', async (req, res) => {
       authorization: authorization?.name ?? null,
     },
   });
-});
+}));
 
 export default router;

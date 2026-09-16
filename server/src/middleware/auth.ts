@@ -3,6 +3,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { AuthorizationModel, hasPermission, Action } from '../models/authorization.model';
+import { asyncHandler } from './asyncHandler';
 
 const JWT_SECRET = process.env.JWT_SECRET as string; // המפתח שאיתו חתמנו את הטוקן ב-login (routes/auth.ts)
 
@@ -33,12 +34,12 @@ export function requireAuth(req: AuthedRequest, res: Response, next: NextFunctio
 // שלב 2: מותר לו לבצע את הפעולה הזו? בודק מול פרופיל ה-Authorization המוטמע
 // זו "פונקציה שמחזירה פונקציה" - כי צריך להעביר פרמטרים (resource, action) לפני שExpress קורא לה
 export function requireAuthorization(resource: string, action: Action) {
-  return async (req: AuthedRequest, res: Response, next: NextFunction) => {
+  return asyncHandler(async (req: AuthedRequest, res: Response, next: NextFunction) => {
     if (!req.user) {
       return res.status(401).json({ error: 'לא מחוברת' }); // הגנה - אם מישהו ישכח לשים requireAuth לפני זה
     }
 
-    // שולפים מהמסד את פרופיל ההרשאה שהמשתמש מקושר אליו (ה-id שמור בטוקן שלו)
+      // שולפים מהמסד את פרופיל ההרשאה שהמשתמש מקושר אליו (ה-id שמור בטוקן שלו)
     const authorization = await AuthorizationModel.findById(req.user.authorizationId);
 
     if (!authorization || !hasPermission(authorization, resource, action)) {
@@ -46,5 +47,5 @@ export function requireAuthorization(resource: string, action: Action) {
     }
 
     next(); // מותר - ממשיכים לקוד האמיתי של ה-route
-  };
+  });
 }

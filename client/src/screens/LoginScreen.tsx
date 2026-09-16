@@ -1,23 +1,22 @@
 // RecruitFlow — מסך התחברות (קבוצה ג')
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { Heading, Text, Field, Input, Button, Card, Badge } from '../design-system/components';
+import { Heading, Text, Field, Input, Button, Card } from '../design-system/components';
 
 const API_BASE = 'http://localhost:4000';
 
-type LoggedInUser = {
-  id: number;
-  fullName: string;
+export type LoggedInUser = {
+  id: string;
+  name: string;
   email: string;
-  role: string;
+  authorization: string | null;
 };
 
-export default function LoginScreen() {
+export default function LoginScreen({ onLoginSuccess }: { onLoginSuccess: (user: LoggedInUser) => void }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [user, setUser] = useState<LoggedInUser | null>(null);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -40,26 +39,12 @@ export default function LoginScreen() {
 
       // שומרים את הטוקן כדי שנוכל להשתמש בו בבקשות הבאות (למשל /api/users)
       localStorage.setItem('rf_token', data.token);
-      setUser(data.user);
+      onLoginSuccess(data.user);
     } catch {
       setError('לא ניתן להתחבר לשרת - ודאי שהוא רץ על פורט 4000');
     } finally {
       setLoading(false);
     }
-  }
-
-  if (user) {
-    return (
-      <div style={{ maxWidth: 420, margin: '80px auto' }} dir="rtl">
-        <Card>
-          <Heading level={2}>התחברת בהצלחה</Heading>
-          <Text>{user.fullName} ({user.email})</Text>
-          <div style={{ marginTop: 12 }}>
-            <Badge tone="success">{user.role}</Badge>
-          </div>
-        </Card>
-      </div>
-    );
   }
 
   return (

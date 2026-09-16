@@ -15,6 +15,7 @@ export interface Permission {
 }
 
 export interface Authorization {
+  _id: Types.ObjectId;
   name: string; // שם התפקיד, למשל: "מנהל מקצועי"
   permissions: Permission[]; // רשימת ה-resource/actions שהתפקיד הזה מרשה
   createdBy?: Types.ObjectId; // -> User (מנהל המערכת שיצר את הפרופיל)
