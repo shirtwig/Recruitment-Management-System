@@ -22,7 +22,8 @@ export interface Authorization {
 }
 
 // _id: false - כי כל permission הוא רק תת-מסמך בתוך המערך, לא צריך _id משלו
-const permissionSchema = new Schema<Permission>(
+// מיוצא כדי ש-user.model.ts יוכל להשתמש באותו schema בדיוק (כל משתמש מקבל permissions אישיים משלו)
+export const permissionSchema = new Schema<Permission>(
   {
     resource: { type: String, required: true },
     actions: { type: [String], required: true },
@@ -39,8 +40,8 @@ const authorizationSchema = new Schema<Authorization>({
 export const AuthorizationModel = model<Authorization>('Authorization', authorizationSchema);
 export const authorizationRepository = new Repository<Authorization>(AuthorizationModel);
 
-// בודק אם לפרופיל הרשאה מסוים יש הרשאת action על resource מסוים
+// בודק אם למי-שהוא (משתמש או פרופיל הרשאה - לשניהם יש permissions: Permission[]) יש הרשאת action על resource מסוים
 // זו לוגיקה עסקית ספציפית (לא CRUD רגיל), ולכן היא לא בתוך Repository אלא פונקציה נפרדת כאן
-export function hasPermission(auth: Authorization, resource: string, action: Action): boolean {
-  return auth.permissions.some((p) => p.resource === resource && p.actions.includes(action));
+export function hasPermission(entity: { permissions?: Permission[] }, resource: string, action: Action): boolean {
+  return (entity.permissions ?? []).some((p) => p.resource === resource && p.actions.includes(action));
 }

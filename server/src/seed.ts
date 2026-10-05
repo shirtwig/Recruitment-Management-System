@@ -11,11 +11,13 @@ const AUTHORIZATION_PROFILES: { name: string; permissions: Permission[] }[] = [
     name: 'מנהל_ראשי',
     permissions: [{ resource: 'Position', actions: CRUD_ACTIONS }],
   },
+
   {
     // דוגמה: פרופיל עם הרשאת קריאה בלבד (במקום לכתוב 'READ' בכל פרופיל בנפרד)
     name: 'מראיין',
     permissions: [{ resource: 'EvaluationScore', actions: ['READ'] }],
   },
+
   {
     name: 'רפרנט',
     permissions: [
@@ -24,6 +26,7 @@ const AUTHORIZATION_PROFILES: { name: string; permissions: Permission[] }[] = [
       { resource: 'Document', actions: CRUD_ACTIONS },
     ],
   },
+  
   {
     name: 'ועדת_מכרזים',
     permissions: [
@@ -63,12 +66,29 @@ async function main() {
   if (!existingAdmin && adminAuth) {
     const passwordHash = await bcrypt.hash('Admin123!', 10);
     await UserModel.create({
-      name: 'מנהל מערכת ראשי',
+      firstName: 'מנהל',
+      lastName: 'מערכת ראשי',
       email: adminEmail,
       passwordHash,
       authorizationId: adminAuth._id,
+      permissions: adminAuth.permissions, // ה-permissions האישיים של המנהל, מועתקים מהפרופיל בזמן היצירה
     });
     console.log(`נוצר משתמש מנהל: ${adminEmail} / Admin123! (להחליף סיסמה בהמשך!)`);
+  }
+
+  // מיגרציה חד-פעמית: משתמשים שנוצרו *לפני* שהוספנו permissions אישיים ל-User עדיין בלי השדה בכלל.
+  // ל$exists: false (לא [] ריק בכוונה!) - כדי לא לדרוס permissions שמישהו כבר התאים אישית אחרי המעבר.
+  const usersToMigrate = await UserModel.find({ permissions: { $exists: false } });
+  for (const user of usersToMigrate) {
+    const profile = await AuthorizationModel.findById(user.authorizationId);
+    if (profile) {
+      // updateOne (לא save) - כדי לא להפעיל ולידציה על כל המסמך, כולל שדות ישנים (firstName/lastName)
+      // שעדיין חסרים אצל משתמשים שנוצרו לפני שינוי סכמה קודם ולא עודכנו עדיין
+      await UserModel.updateOne({ _id: user._id }, { $set: { permissions: profile.permissions } });
+    }
+  }
+  if (usersToMigrate.length > 0) {
+    console.log(`הועברו ${usersToMigrate.length} משתמשים ישנים - הרשאות הפרופיל שלהם הועתקו אליהם אישית`);
   }
 
   console.log('הסתיים בהצלחה.');

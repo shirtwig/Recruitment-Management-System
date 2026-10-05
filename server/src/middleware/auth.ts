@@ -2,7 +2,8 @@
 
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { AuthorizationModel, hasPermission, Action } from '../models/authorization.model';
+import { hasPermission, Action } from '../models/authorization.model';
+import { UserModel } from '../models/user.model';
 import { asyncHandler } from './asyncHandler';
 
 const JWT_SECRET = process.env.JWT_SECRET as string; // המפתח שאיתו חתמנו את הטוקן ב-login (routes/auth.ts)
@@ -39,10 +40,11 @@ export function requireAuthorization(resource: string, action: Action) {
       return res.status(401).json({ error: 'לא מחוברת' }); // הגנה - אם מישהו ישכח לשים requireAuth לפני זה
     }
 
-      // שולפים מהמסד את פרופיל ההרשאה שהמשתמש מקושר אליו (ה-id שמור בטוקן שלו)
-    const authorization = await AuthorizationModel.findById(req.user.authorizationId);
+    // שולפים את המשתמש עצמו כדי לבדוק את ה-permissions *האישיים* שלו -
+    // לא את פרופיל ה-Authorization המשותף, כי לשני משתמשים באותו פרופיל יכולות להיות הרשאות שונות בפועל
+    const user = await UserModel.findById(req.user.id);
 
-    if (!authorization || !hasPermission(authorization, resource, action)) {
+    if (!user || !hasPermission(user, resource, action)) {
       return res.status(403).json({ error: `אין לך הרשאת ${action} על ${resource}` }); // 403 = "מזוהה אבל אסור לך"
     }
 
